@@ -8,3 +8,5 @@ out/
 local.properties
 .env
 .env.*
+examples/*/build/
+examples/*/.gradle/
