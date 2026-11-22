@@ -57,8 +57,9 @@ public final class UrlConnectionTransport implements HttpTransport {
             }
             byte[] body = request.body();
             if (body != null) {
+                // Not in streaming mode: HttpURLConnection then keeps the body of a 401 that carries
+                // an authentication challenge (9in's answer to a wrong client secret).
                 conn.setDoOutput(true);
-                conn.setFixedLengthStreamingMode(body.length);
                 try (OutputStream out = conn.getOutputStream()) {
                     out.write(body);
                 }

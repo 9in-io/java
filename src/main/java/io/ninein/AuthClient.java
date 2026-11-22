@@ -229,7 +229,6 @@ public final class AuthClient {
         }
         String state = query.get("state");
         if (state == null || !Codec.constantTimeEquals(state, pending.state())) throw new NineException("invalid_state", "state mismatch", 400);
-        rememberState(pending);
 
         Discovery config = tenant.discovery();
         String iss = query.get("iss");
@@ -241,6 +240,7 @@ public final class AuthClient {
         String code = query.get("code");
         if (code == null || code.isEmpty()) throw new NineException("missing_code", "no authorization code in the callback", 400);
 
+        rememberState(pending); // only now: a callback refused above doesn't use the sign-in up
         Map<String, String> form = new LinkedHashMap<>();
         form.put("grant_type", "authorization_code");
         form.put("code", code);

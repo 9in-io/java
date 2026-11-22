@@ -313,6 +313,18 @@ class AuthClientTest {
     }
 
     @Test
+    void refusedCallbacksDoNotUseTheSignInUp() {
+        AuthClient auth = publicClient();
+        Login login = auth.createLogin();
+        String evil = REDIRECT + "?code=c_1&state=" + Codec.urlEncode(login.pending().state()) + "&iss=" + Codec.urlEncode("https://evil.9in.io");
+        assertEquals("invalid_issuer", assertThrows(NineException.class, () -> auth.handleCallback(evil, login.pending())).error());
+        String noCode = REDIRECT + "?state=" + Codec.urlEncode(login.pending().state()) + "&iss=" + Codec.urlEncode(nine.issuer);
+        assertEquals("missing_code", assertThrows(NineException.class, () -> auth.handleCallback(noCode, login.pending())).error());
+        answerWithIdToken("RS256", c -> c, login.pending());
+        assertEquals("at_1", auth.handleCallback(callback(login.pending()), login.pending()).accessToken());
+    }
+
+    @Test
     void expiredPendingLoginIsRefused() {
         AuthClient auth = publicClient();
         Login login = auth.createLogin();

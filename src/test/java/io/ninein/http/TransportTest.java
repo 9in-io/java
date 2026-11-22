@@ -49,6 +49,15 @@ class TransportTest {
             }
             respond(ex, 200, "late");
         });
+        server.createContext("/unauthorized", ex -> {
+            read(ex.getRequestBody());
+            ex.getResponseHeaders().add("WWW-Authenticate", "Basic realm=\"9in\"");
+            ex.getResponseHeaders().add("Content-Type", "application/json");
+            byte[] bytes = "{\"error\":\"invalid_client\"}".getBytes(StandardCharsets.UTF_8);
+            ex.sendResponseHeaders(401, bytes.length);
+            ex.getResponseBody().write(bytes);
+            ex.close();
+        });
         server.createContext("/empty", ex -> {
             ex.sendResponseHeaders(204, -1);
             ex.close();
@@ -86,6 +95,19 @@ class TransportTest {
         HttpResponse r = t.send(HttpRequest.builder().method("POST").url(base + "/error").body("x").build());
         assertEquals(400, r.status());
         assertEquals("{\"error\":\"invalid_request\"}", r.bodyText());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    void authenticationChallengesKeepTheirBody(HttpTransport t) throws IOException {
+        // 9in answers a wrong client secret with 401, WWW-Authenticate: Basic and {"error":"invalid_client"}.
+        HttpResponse post = t.send(HttpRequest.builder().method("POST").url(base + "/unauthorized")
+                .header("Authorization", "Basic d3Jvbmc6d3Jvbmc=").header("Content-Type", "application/x-www-form-urlencoded").body("grant_type=client_credentials").build());
+        assertEquals(401, post.status());
+        assertEquals("{\"error\":\"invalid_client\"}", post.bodyText());
+        HttpResponse get = t.send(HttpRequest.builder().url(base + "/unauthorized").build());
+        assertEquals(401, get.status());
+        assertEquals("{\"error\":\"invalid_client\"}", get.bodyText());
     }
 
     @ParameterizedTest
