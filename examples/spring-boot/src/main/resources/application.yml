@@ -1,0 +1,18 @@
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  port: ${PORT:8080}
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          nine:
+            client-id: ${NINE_CLIENT_ID}
+            client-secret: ${NINE_CLIENT_SECRET}
+            scope: openid,profile,email,offline_access
+            # Register this URL as a callback of your 9in application.
+            redirect-uri: ${NINE_REDIRECT_URI:{baseUrl}/login/oauth2/code/{registrationId}}
+        provider:
+          nine:
+            issuer-uri: ${NINE_ISSUER}

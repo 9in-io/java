@@ -250,6 +250,7 @@ class SecurityConfig {
                 .requestMatchers("/api/orders/**").hasAuthority("SCOPE_orders:read")
                 .anyRequest().authenticated())
             .oauth2ResourceServer(o -> o.opaqueToken(t -> t.introspector(new NineOpaqueTokenIntrospector(verifier))))
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))   // bearer tokens, never cookies
             .csrf(c -> c.disable());
         return http.build();
     }

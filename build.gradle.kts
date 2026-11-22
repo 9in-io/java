@@ -17,15 +17,17 @@ java {
     withJavadocJar()
 }
 
-// Spring Security 6+ needs Java 17, so the Spring helpers (io.ninein.spring) are compiled for 17
-// in their own source set and packed into the same jar. They are only loaded by applications
-// that use Spring; everything else is Java 11 bytecode.
-val spring: SourceSet = sourceSets.create("spring") {
-    compileClasspath += sourceSets.main.get().output
+java {
+    // The Spring helpers compile against Spring Security (built for Java 17) as a compile-only
+    // dependency; the SDK itself stays Java 11 bytecode. Spring's classes are only loaded by
+    // applications that use Spring, which run on Java 17+ anyway.
+    disableAutoTargetJvm()
 }
+
+// Tests of the Spring helpers need Java 17+, so they live in their own source set.
 val springTest: SourceSet = sourceSets.create("springTest") {
-    compileClasspath += sourceSets.main.get().output + spring.output + sourceSets.test.get().output
-    runtimeClasspath += sourceSets.main.get().output + spring.output + sourceSets.test.get().output
+    compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output
+    runtimeClasspath += sourceSets.main.get().output + sourceSets.test.get().output
 }
 
 // Signatures of Android API 26 (the minSdk of the Android SDK built on this core), for the
@@ -39,8 +41,8 @@ dependencies {
     // No runtime dependencies. The framework helpers compile against these and are only
     // loaded when the application has them.
     compileOnly("jakarta.servlet:jakarta.servlet-api:6.0.0")
-    "springCompileOnly"("org.springframework.security:spring-security-oauth2-resource-server:6.5.10")
-    "springCompileOnly"("org.springframework.security:spring-security-oauth2-jose:6.5.10")
+    compileOnly("org.springframework.security:spring-security-oauth2-resource-server:6.5.10")
+    compileOnly("org.springframework.security:spring-security-oauth2-jose:6.5.10")
 
     testImplementation(platform("org.junit:junit-bom:5.14.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -68,9 +70,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 // String concatenation through StringBuilder instead of invokedynamic: the core runs on Android.
 tasks.compileJava { options.compilerArgs.add("-XDstringConcat=inline") }
-listOf(spring.compileJavaTaskName, springTest.compileJavaTaskName).forEach { name ->
-    tasks.named<JavaCompile>(name) { options.release.set(17) }
-}
+tasks.named<JavaCompile>(springTest.compileJavaTaskName) { options.release.set(17) }
 
 tasks.javadoc {
     (options as StandardJavadocDocletOptions).apply {
@@ -82,7 +82,6 @@ tasks.javadoc {
 }
 
 tasks.jar {
-    from(spring.output)
     manifest {
         attributes(
             "Automatic-Module-Name" to "io.ninein",
@@ -90,10 +89,6 @@ tasks.jar {
             "Implementation-Version" to project.version,
         )
     }
-}
-
-tasks.named<Jar>("sourcesJar") {
-    from(spring.allSource)
 }
 
 val testJavaHome = findProperty("testJavaHome") as String?
