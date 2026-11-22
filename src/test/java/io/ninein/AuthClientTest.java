@@ -540,7 +540,9 @@ class AuthClientTest {
         answerRaw(Jwts.sign(rotated, "ES256", Jwts.header("ES256", "k_new", "JWT"), idClaims(second.pending().nonce())));
         assertEquals("usr_123", auth.handleCallback(callback(second.pending()), second.pending()).subject());
         assertEquals(2, nine.count("/jwks.json"));
-        // An unknown kid: one refetch, then no more fetches for a minute.
+        // An unknown kid: one refetch (once the 10 s gap since the last forced refetch has passed),
+        // then no more fetches for that kid for a minute.
+        clock.advance(Duration.ofSeconds(11));
         for (int i = 0; i < 3; i++) {
             NineException e = refuseRaw(auth, p -> Jwts.sign(TestKeys.of("RS256"), "RS256", Jwts.header("RS256", "k_junk", "JWT"), idClaims(p.nonce())));
             assertEquals("invalid_id_token", e.error());
@@ -550,6 +552,40 @@ class AuthClientTest {
         clock.advance(Duration.ofSeconds(61));
         refuseRaw(auth, p -> Jwts.sign(TestKeys.of("RS256"), "RS256", Jwts.header("RS256", "k_junk", "JWT"), idClaims(p.nonce())));
         assertEquals(4, nine.count("/jwks.json"));
+    }
+
+    @Test
+    void junkKidsCannotForceARefetchEachTime() {
+        AuthClient auth = confidential();
+        for (int i = 0; i < 5; i++) {
+            final int n = i;
+            refuseRaw(auth, p -> Jwts.sign(TestKeys.of("RS256"), "RS256", Jwts.header("RS256", "k_junk_" + n, "JWT"), idClaims(p.nonce())));
+        }
+        assertEquals(2, nine.count("/jwks.json"), "the first fetch and one forced refetch, whatever the kids");
+        // a key rotated in during the gap is found once the gap has passed (it wasn't remembered as missing)
+        TestKeys rotated = TestKeys.fresh("ES256", "k_junk_4");
+        nine.jwks.add(rotated.jwk);
+        clock.advance(Duration.ofSeconds(11));
+        Login login = auth.createLogin();
+        answerRaw(Jwts.sign(rotated, "ES256", Jwts.header("ES256", "k_junk_4", "JWT"), idClaims(login.pending().nonce())));
+        assertEquals("usr_123", auth.handleCallback(callback(login.pending()), login.pending()).subject());
+    }
+
+    @Test
+    void discoveryEndpointsMustUseHttps() {
+        nine.discovery.put("token_endpoint", "http://acme.9in.io/oauth/token");
+        NineException e = assertThrows(NineException.class, () -> publicClient().discovery());
+        assertEquals("discovery_failed", e.error());
+        assertTrue(e.description().contains("token_endpoint"));
+    }
+
+    @Test
+    void codeExchangeNeedsARedirectUri() {
+        AuthClient auth = AuthClient.builder().issuer(nine.issuer).clientId(CLIENT).transport(nine).clock(clock).build();
+        PendingLogin p = new PendingLogin("st", "no", "verifier-verifier-verifier-verifier-verifier-1", null, null, clock.instant());
+        NineException e = assertThrows(NineException.class, () -> auth.handleCallback("code=c&state=st&iss=" + Codec.urlEncode(nine.issuer), p));
+        assertEquals("invalid_options", e.error());
+        assertEquals(0, nine.count("/oauth/token"));
     }
 
     @Test

@@ -69,6 +69,13 @@ class ManagementClientTest {
     }
 
     @Test
+    void repeatedCursorStopsListAllUsers() {
+        nine.on("GET", "/api/v1/users", r -> json(200, map("users", list(user("u1")), "next_cursor", "same", "total", 9)));
+        NineException e = assertThrows(NineException.class, () -> client.listAllUsers(null));
+        assertTrue(e.description().contains("cursor"));
+    }
+
+    @Test
     void wireDataPassesThroughUnchanged() {
         nine.on("GET", "/api/v1/users/usr_1", r -> json(200, map("user", user("usr_1"), "identities", list(), "sessions", list(), "has_password", true, "mfa", map("enabled", false))));
         Map<String, Object> detail = client.getUser("usr_1");

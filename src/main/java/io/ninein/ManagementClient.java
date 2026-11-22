@@ -104,8 +104,10 @@ public final class ManagementClient {
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> listAllUsers(String query) {
         List<Map<String, Object>> all = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
         String cursor = null;
         do {
+            if (cursor != null && !seen.add(cursor)) throw new NineException("request_failed", "the user list repeated a cursor");
             Map<String, Object> page = listUsers(query, cursor, 100);
             Object users = page.get("users");
             if (users instanceof List) for (Object u : (List<Object>) users) if (u instanceof Map) all.add((Map<String, Object>) u);

@@ -90,6 +90,7 @@ public final class AdapterHandler {
      * @param body the raw request body
      */
     public AdapterResponse handle(String method, String path, Map<String, String> headers, byte[] body) {
+        if (path == null || path.isEmpty()) throw new IllegalArgumentException("the request path is required");
         String signature = header(headers, Signatures.HEADER);
         String requestId = header(headers, Signatures.REQUEST_ID_HEADER);
         if (requestId == null) requestId = "";

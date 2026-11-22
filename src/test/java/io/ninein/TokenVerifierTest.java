@@ -139,6 +139,13 @@ class TokenVerifierTest {
     }
 
     @Test
+    void listValuedScopes() {
+        AccessTokenClaims c = verifier.verify(token("RS256", x -> x.with("scope", list("orders:read", "admin"))), "admin");
+        assertEquals(Arrays.asList("orders:read", "admin"), c.scopes());
+        assertTrue(c.hasScope("admin"));
+    }
+
+    @Test
     void missingAndMalformed() {
         refused(null, "null");
         refused("", "empty");
@@ -184,6 +191,7 @@ class TokenVerifierTest {
         verifier.verify(Jwts.sign(rotated, "PS256", Jwts.header("PS256", "k_rotated", "at+jwt"), claims()));
         assertEquals(2, nine.count("/jwks.json"));
         String junk = Jwts.sign(TestKeys.of("RS256"), "RS256", Jwts.header("RS256", "k_junk", "at+jwt"), claims());
+        clock.advance(Duration.ofSeconds(11)); // past the gap since the rotation's forced refetch
         for (int i = 0; i < 5; i++) refused(junk, "unknown kid");
         assertEquals(3, nine.count("/jwks.json"));
         clock.advance(Duration.ofSeconds(61));

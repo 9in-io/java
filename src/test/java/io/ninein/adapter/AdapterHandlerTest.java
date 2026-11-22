@@ -216,5 +216,6 @@ class AdapterHandlerTest {
         assertThrows(IllegalArgumentException.class, () -> AdapterUser.builder("").build());
         assertThrows(NineException.class, () -> new AdapterHandler("", adapter));
         assertThrows(NineException.class, () -> new AdapterHandler(SECRET, null));
+        assertThrows(IllegalArgumentException.class, () -> handler.handle("POST", null, new HashMap<>(), "{}"));
     }
 }

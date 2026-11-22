@@ -17,6 +17,9 @@ import java.util.Map;
  * JVM and on Android. 10 second connect and read timeouts; redirects are never followed (a 3xx
  * comes back as a response). Thread-safe.
  *
+ * <p>Like every {@code HttpURLConnection}, it consults a JVM-wide {@link java.net.Authenticator}
+ * (if your application installed one) when a server answers 401 with an authentication challenge.
+ *
  * <p>The JDK's {@code HttpURLConnection} doesn't support {@code PATCH}; the server-side
  * {@code ManagementClient} therefore defaults to {@link JavaHttpClientTransport}.
  */

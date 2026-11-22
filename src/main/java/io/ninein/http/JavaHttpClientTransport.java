@@ -24,17 +24,18 @@ public final class JavaHttpClientTransport implements HttpTransport {
     }
 
     public JavaHttpClientTransport(Duration timeout) {
-        this.timeout = timeout;
+        this.timeout = timeout == null ? Duration.ofSeconds(10) : timeout;
         this.client = HttpClient.newBuilder()
-                .connectTimeout(timeout)
+                .connectTimeout(this.timeout)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .build();
     }
 
     /** Uses your own client (its redirect policy should be {@code NEVER}). */
     public JavaHttpClientTransport(HttpClient client, Duration timeout) {
+        if (client == null) throw new IllegalArgumentException("a client is required");
         this.client = client;
-        this.timeout = timeout;
+        this.timeout = timeout == null ? Duration.ofSeconds(10) : timeout;
     }
 
     @Override

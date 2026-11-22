@@ -44,6 +44,8 @@ public final class AccessTokenClaims {
         List<String> out = new ArrayList<>();
         if (scope instanceof String) {
             for (String s : ((String) scope).split(" ")) if (!s.isEmpty()) out.add(s);
+        } else if (scope instanceof List) {
+            for (Object s : (List<?>) scope) if (s instanceof String && !((String) s).isEmpty()) out.add((String) s);
         }
         return Collections.unmodifiableList(out);
     }

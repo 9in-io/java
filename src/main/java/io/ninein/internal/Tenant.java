@@ -26,6 +26,8 @@ public final class Tenant {
     static final Duration DISCOVERY_TTL = Duration.ofHours(1);
     static final Duration JWKS_TTL = Duration.ofMinutes(10);
     static final Duration MISS_THROTTLE = Duration.ofSeconds(60);
+    /** At most one forced refetch per this window, whatever the kid (junk kids can't hammer the JWKS). */
+    static final Duration FORCED_REFETCH_GAP = Duration.ofSeconds(10);
 
     private final String issuer;
     private final HttpTransport transport;
@@ -40,6 +42,7 @@ public final class Tenant {
     private volatile Instant keysFetchedAt;
     private volatile long keysGeneration;
     private final Map<String, Instant> missingKids = new ConcurrentHashMap<>();
+    private volatile Instant lastForcedRefetch;
 
     public Tenant(String issuer, HttpTransport transport, Clock clock) {
         this.issuer = issuer;
@@ -149,6 +152,15 @@ public final class Tenant {
             if (fetched.tokenEndpoint() == null || fetched.jwksUri() == null) {
                 throw new NineException("discovery_failed", "incomplete discovery document");
             }
+            if (issuer.startsWith("https://")) {
+                for (Map.Entry<String, Object> e : raw.entrySet()) {
+                    if (e.getKey().endsWith("_endpoint") || e.getKey().equals("jwks_uri")) {
+                        if (e.getValue() instanceof String && !((String) e.getValue()).startsWith("https://")) {
+                            throw new NineException("discovery_failed", e.getKey() + " is not an https URL");
+                        }
+                    }
+                }
+            }
             discovery = fetched;
             discoveryFetchedAt = clock.instant();
             return fetched;
@@ -170,6 +182,13 @@ public final class Tenant {
         Instant missedAt = missingKids.get(missKey);
         Instant now = clock.instant();
         if (missedAt != null && now.isBefore(missedAt.plus(MISS_THROTTLE))) return null;
+        synchronized (jwksLock) {
+            Instant last = lastForcedRefetch;
+            // Another unknown kid caused a refetch moments ago: don't fetch again, and don't
+            // remember this kid as missing (a key that was just rotated in is found next time).
+            if (last != null && now.isBefore(last.plus(FORCED_REFETCH_GAP))) return find(currentKeys(false), kid);
+            lastForcedRefetch = now;
+        }
         key = find(currentKeys(true), kid);
         if (key == null) {
             if (missingKids.size() > 1000) missingKids.clear();
