@@ -3,6 +3,7 @@ package io.ninein.servlet;
 import io.ninein.AccessTokenClaims;
 import io.ninein.AccessTokenVerifier;
 import io.ninein.InsufficientScopeException;
+import io.ninein.InvalidTokenException;
 import io.ninein.NineException;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -87,8 +88,7 @@ public class BearerTokenFilter implements Filter {
             write(response, 403, "insufficient_scope", e.description());
             return;
         } catch (NineException e) {
-            Integer status = e.status();
-            if (status != null && status == 401) {
+            if (e instanceof InvalidTokenException || "unsupported_algorithm".equals(e.error())) {
                 response.setHeader("WWW-Authenticate", "Bearer realm=\"9in\", error=\"invalid_token\", error_description=\"" + quoted(e.description()) + "\"");
                 write(response, 401, "invalid_token", e.description());
             } else {

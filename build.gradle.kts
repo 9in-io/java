@@ -24,8 +24,8 @@ val spring: SourceSet = sourceSets.create("spring") {
     compileClasspath += sourceSets.main.get().output
 }
 val springTest: SourceSet = sourceSets.create("springTest") {
-    compileClasspath += sourceSets.main.get().output + spring.output
-    runtimeClasspath += sourceSets.main.get().output + spring.output
+    compileClasspath += sourceSets.main.get().output + spring.output + sourceSets.test.get().output
+    runtimeClasspath += sourceSets.main.get().output + spring.output + sourceSets.test.get().output
 }
 
 // Signatures of Android API 26 (the minSdk of the Android SDK built on this core), for the
@@ -39,23 +39,24 @@ dependencies {
     // No runtime dependencies. The framework helpers compile against these and are only
     // loaded when the application has them.
     compileOnly("jakarta.servlet:jakarta.servlet-api:6.0.0")
-    "springCompileOnly"("org.springframework.security:spring-security-oauth2-resource-server:6.5.7")
-    "springCompileOnly"("org.springframework.security:spring-security-oauth2-jose:6.5.7")
+    "springCompileOnly"("org.springframework.security:spring-security-oauth2-resource-server:6.5.10")
+    "springCompileOnly"("org.springframework.security:spring-security-oauth2-jose:6.5.10")
 
-    testImplementation(platform("org.junit:junit-bom:5.13.4"))
+    testImplementation(platform("org.junit:junit-bom:5.14.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
+    testImplementation("org.apache.tomcat.embed:tomcat-embed-core:10.1.60")
     testImplementation("org.codehaus.mojo:animal-sniffer:1.24")
 
-    "springTestImplementation"(platform("org.junit:junit-bom:5.13.4"))
+    "springTestImplementation"(platform("org.junit:junit-bom:5.14.3"))
     "springTestImplementation"("org.junit.jupiter:junit-jupiter")
     "springTestRuntimeOnly"("org.junit.platform:junit-platform-launcher")
-    "springTestImplementation"("org.springframework.security:spring-security-oauth2-resource-server:6.5.7")
-    "springTestImplementation"("org.springframework.security:spring-security-oauth2-jose:6.5.7")
-    "springTestImplementation"("org.springframework.security:spring-security-web:6.5.7")
-    "springTestImplementation"("org.springframework:spring-test:6.2.12")
-    "springTestImplementation"("jakarta.servlet:jakarta.servlet-api:6.0.0")
+    // Compiled against Spring Security 6.5 (Boot 3.5), tested on 7.0 (Boot 4).
+    "springTestImplementation"("org.springframework.security:spring-security-oauth2-resource-server:7.0.9")
+    "springTestImplementation"("org.springframework.security:spring-security-oauth2-jose:7.0.9")
+    "springTestImplementation"("org.springframework:spring-test:7.0.10")
+    "springTestImplementation"("jakarta.servlet:jakarta.servlet-api:6.1.0")
 
     androidSignature("net.sf.androidscents.signature:android-api-level-26:8.0.0_r2@signature")
 }

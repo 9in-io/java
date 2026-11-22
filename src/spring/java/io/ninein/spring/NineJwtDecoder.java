@@ -52,7 +52,7 @@ public final class NineJwtDecoder implements JwtDecoder {
         } catch (InvalidTokenException e) {
             throw new BadJwtException(e.description(), e);
         } catch (NineException e) {
-            if (e.status() != null && e.status() == 401) throw new BadJwtException(e.description(), e);
+            if ("unsupported_algorithm".equals(e.error())) throw new BadJwtException(e.description(), e);
             throw new JwtException(e.getMessage(), e);
         }
         Map<String, Object> header = Json.parseObject(new String(Codec.base64UrlDecode(token.substring(0, token.indexOf('.'))), StandardCharsets.UTF_8));

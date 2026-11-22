@@ -256,7 +256,13 @@ public final class HybridTokenVerifier implements AccessTokenVerifier {
         Map<String, String> headers = new LinkedHashMap<>();
         String credentials = Codec.urlEncode(clientId) + ":" + Codec.urlEncode(clientSecret);
         headers.put("Authorization", "Basic " + java.util.Base64.getEncoder().encodeToString(Codec.utf8(credentials)));
-        Map<String, Object> body = tenant.postForm(endpoint, form, headers, "introspection_failed");
+        Map<String, Object> body;
+        try {
+            body = tenant.postForm(endpoint, form, headers, "introspection_failed");
+        } catch (NineException e) {
+            // Not the token's fault (wrong client credentials, 9in unreachable): never a 401 for the caller.
+            throw new NineException("introspection_failed", "introspection failed: " + e.getMessage(), 503, e);
+        }
         if (!Boolean.TRUE.equals(body.get("active")) || "refresh_token".equals(body.get("token_type"))) return null;
         return body;
     }

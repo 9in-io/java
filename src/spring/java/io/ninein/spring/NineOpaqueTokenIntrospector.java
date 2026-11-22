@@ -57,7 +57,7 @@ public final class NineOpaqueTokenIntrospector implements OpaqueTokenIntrospecto
         } catch (InvalidTokenException e) {
             throw new BadOpaqueTokenException(e.description(), e);
         } catch (NineException e) {
-            if (e.status() != null && e.status() == 401) throw new BadOpaqueTokenException(e.description(), e);
+            if ("unsupported_algorithm".equals(e.error())) throw new BadOpaqueTokenException(e.description(), e);
             throw new OAuth2IntrospectionException(e.getMessage(), e);
         }
         Map<String, Object> attributes = SpringClaims.withInstants(claims.asMap());
