@@ -143,7 +143,7 @@ publishing {
             pom {
                 name.set("9in Java SDK")
                 description.set(project.description)
-                url.set("https://9in.io/docs/java/")
+                url.set("https://github.com/9in-io/java")
                 licenses {
                     license {
                         name.set("MIT")
