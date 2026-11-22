@@ -66,6 +66,8 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.compilerArgs.addAll(listOf("-Xlint:all,-options,-serial,-classfile,-processing", "-parameters"))
 }
+// String concatenation through StringBuilder instead of invokedynamic: the core runs on Android.
+tasks.compileJava { options.compilerArgs.add("-XDstringConcat=inline") }
 listOf(spring.compileJavaTaskName, springTest.compileJavaTaskName).forEach { name ->
     tasks.named<JavaCompile>(name) { options.release.set(17) }
 }
