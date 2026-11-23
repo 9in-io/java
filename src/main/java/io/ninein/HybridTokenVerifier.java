@@ -23,8 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Access-token verification with a choice between speed and revocation (SSOfy's "hybrid"
- * validation, kept):
+ * Access-token verification with a choice between speed and revocation:
  *
  * <ul>
  *   <li>{@link Mode#HYBRID} (default with client credentials): the local check
